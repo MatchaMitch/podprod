@@ -6,39 +6,8 @@
 
 {% block main %}
 
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Symbol</th>
-                <th>Name</th>
-                <th>Shares</th>
-                <th>Price</th>
-                <th>Total</th>
-            </tr>
-        </thead>
-
-        <tfoot>
-            <tr>
-                <td colspan="4"></td>
-                <td>{{ sumtotal }}</td>
-            </tr>
-        </tfoot>
-
-        <tbody>
-            {% for row in rows %}
-            <tr>
-                <td>{{ row['symbol'] }}</td>
-                <td>{{ row['name'] }}</td>
-                <td>{{ row['SUM(shares)'] }}</td>
-                <td>{{ row['price'] }}</td>
-                <td>{{ row['total'] }}</td>
-            </tr>
-            {% endfor %}
-            <tr>
-                <td colspan="4">Cash</td>
-                <td>{{ cash }}</td>
-            </tr>
-        </tbody>
-    </table>
+    <div>
+        <h1>Welcome to PodProd</h1>
+    </p>
 
 {% endblock %}
