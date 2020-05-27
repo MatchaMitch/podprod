@@ -1,291 +1,123 @@
 import os
+from flask import Flask, render_template, request, redirect
+from werkzeug.utils import secure_filename
+import speech_recognition as sr
+import simpleaudio as sa
 
-from cs50 import SQL
-from flask import Flask, flash, jsonify, redirect, render_template, request, session
-from flask_session import Session
-from tempfile import mkdtemp
-from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
-from werkzeug.security import check_password_hash, generate_password_hash
-
-from helpers import apology, login_required, lookup, usd
-
-# Configure application
 app = Flask(__name__)
 
-# Ensure templates are auto-reloaded
-app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["FILE_UPLOADS"] = "/Users/Micha/documents/github/podprod/uploads"
+app.config["ALLOWED_EXTENSIONS"] = ["WAV"]
+app.config["MAX_FILESIZE"] = 86400000
 
-# Ensure responses aren't cached
-@app.after_request
-def after_request(response):
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Expires"] = 0
-    response.headers["Pragma"] = "no-cache"
-    return response
+def allowed_file(filename):
 
-# Custom filter
-app.jinja_env.filters["usd"] = usd
+	if not "." in filename:
+		return False
 
-# Configure session to use filesystem (instead of signed cookies)
-app.config["SESSION_FILE_DIR"] = mkdtemp()
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
-Session(app)
+	ext = filename.rsplit(".", 1)[1]
 
-# Configure CS50 Library to use SQLite database
-db = SQL("sqlite:///finance.db")
+	if ext.upper() in app.config["ALLOWED_EXTENSIONS"]:
+		return True
+	else:
+		return False
 
+def allowed_filesize(filesize):
+
+	if int(filesize) <= app.config["MAX_FILESIZE"]:
+		return True
+	else:
+		return False
+
+GOOGLE_SPEECH_API_KEY = None
 
 @app.route("/")
-@login_required
 def index():
-    """Show portfolio of stocks"""
+	return render_template("index.html")
 
-    rows = db.execute("SELECT name, symbol, SUM(shares) FROM orders WHERE user_id = :user_id GROUP BY symbol", user_id=session["user_id"])
-    cash = usd(db.execute("SELECT cash FROM users WHERE id = :user_id", user_id=session["user_id"])[0]['cash'])
 
-    sumtotal = db.execute("SELECT cash FROM users WHERE id = :user_id", user_id=session["user_id"])[0]['cash']
+@app.route("/upload2", methods=["GET", "POST"])
+def upload_file():
 
-    for row in rows:
-        row['price'] = lookup(row['symbol'])['price']
-        row['total'] = float(row['price']) * float(row['SUM(shares)'])
-        sumtotal += row['total']
+	if request.method == "GET":
+		return render_template('upload.html')
 
-    sumtotal = usd(sumtotal)
+	if request.method == "POST":
 
-    return render_template("index.html", rows=rows, cash=cash, sumtotal=sumtotal)
+		if request.files:
 
+			if not allowed_filesize(request.cookies.get("filesize")):
+				print("File exceeded maximum size")
+				return redirect(request.url)
 
-@app.route("/buy", methods=["GET", "POST"])
-@login_required
-def buy():
-    """Buy shares of stock"""
-    if request.method == "GET":
-        return render_template("buy.html")
+			file = request.files["file"]
 
-    else:
-        if not request.form.get("symbol"):
-            return apology("must provide symbol", 403)
+			if file.filename == "":
+				print("File must have a filename")
+				return redirect(request.url)
 
-        elif not request.form.get("shares"):
-            return apology("must buy some shares", 403)
+			if not allowed_file(file.filename):
+				print("Your file doesn't have the right format")
+				return redirect(request.url)
 
-        # Access the data with lookup function
-        data = lookup(request.form.get("symbol"))
+			else:
+				filename = secure_filename(file.filename)
+				file.save(os.path.join(app.config["FILE_UPLOADS"], filename))
 
-        if data == None:
-            return apology("symbol not found", 403)
+				# Speech Recognition stuff.
+				recognizer = sr.Recognizer()
+				audio_file = sr.AudioFile(file)
+				with audio_file as source:
+					audio_data = recognizer.record(source)
+				text = recognizer.recognize_google(audio_data, key=GOOGLE_SPEECH_API_KEY, language="en-EN")
+				print(text)
 
-        # Store data from Form request in variables
-        symbol = data["symbol"]
-        name = data["name"]
-        price = data["price"]
-        shares = request.form.get("shares")
-        total = price * float(shares)
+			print("file saved")
 
-        cash = float(db.execute("SELECT cash FROM users WHERE (id = :user_id)", user_id=session["user_id"])[0]['cash'])
+			return redirect(request.url)
 
-        if cash < total:
-            return apology("Can't afford", 403)
+@app.route("/upload", methods=["GET", "POST"])
+def upload():
+	extra_line = ''
 
-        order = db.execute("INSERT INTO orders (user_id, name, symbol, price, shares, total, timestamp) VALUES (:user_id, :name, :symbol, :price, :shares, :total, CURRENT_TIMESTAMP)", user_id=session["user_id"], name=name, symbol=symbol, price=price, shares=shares, total=total)
+	if request.method == "GET":
+		return render_template('upload.html')
 
-        new_cash = float(cash) - float(total)
+	if request.method == "POST":
 
-        cash_update = db.execute("UPDATE users SET cash = :new_cash WHERE id = :id", new_cash=new_cash, id=session["user_id"])
+		# Check if the post request has the file part.
+		if "file" not in request.files:
+			flash("No file part")
+			return redirect(request.url)
 
-        return redirect("/")
+		file = request.files["file"]
 
+		# If user does not select file, browser also submit an empty part without filename.
+		if file.filename == "":
+			flash("No selected file")
+			return redirect(request.url)
 
-@app.route("/history")
-@login_required
-def history():
-    """Show history of transactions"""
+		if not allowed_file(file.filename):
+			print("Your file doesn't have the right format")
+			return redirect(request.url)
 
-    rows = db.execute("SELECT symbol, shares, price, timestamp FROM orders WHERE user_id = :user_id", user_id=session["user_id"])
-    return render_template("history.html", rows=rows)
+		if file:
+			# Speech Recognition stuff.
+			recognizer = sr.Recognizer()
+			audio_file = sr.AudioFile(file)
+			with audio_file as source:
+				audio_data = recognizer.record(source)
+				text = recognizer.recognize_google(audio_data, key=GOOGLE_SPEECH_API_KEY, language="de-DE")
+			extra_line = f'Your text: "{text}"'
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    """Log user in"""
+			# Saving the file.
+			filename = secure_filename(file.filename)
+			filepath = os.path.join(app.config["FILE_UPLOADS"], filename)
+			file.save(filepath)
 
-    # Forget any user_id
-    session.clear()
+		return render_template('upload.html', extra_line=extra_line)
 
-    # User reached route via POST (as by submitting a form via POST)
-    if request.method == "POST":
+if __name__ == "__main__":
+	app.run()
 
-        # Ensure username was submitted
-        if not request.form.get("username"):
-            return apology("must provide username", 403)
 
-        # Ensure password was submitted
-        elif not request.form.get("password"):
-            return apology("must provide password", 403)
-
-        # Query database for username
-        rows = db.execute("SELECT * FROM users WHERE username = :username",
-                          username=request.form.get("username"))
-
-        # Ensure username exists and password is correct
-        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
-            return apology("invalid username and/or password", 403)
-
-        # Remember which user has logged in
-        session["user_id"] = rows[0]["id"]
-
-        # Redirect user to home page
-        return redirect("/")
-
-    # User reached route via GET (as by clicking a link or via redirect)
-    else:
-        return render_template("login.html")
-
-
-@app.route("/logout")
-def logout():
-    """Log user out"""
-
-    # Forget any user_id
-    session.clear()
-
-    # Redirect user to login form
-    return redirect("/")
-
-
-@app.route("/quote", methods=["GET", "POST"])
-@login_required
-def quote():
-    """Get stock quote."""
-
-    # User reached route via GET
-    if request.method == "GET":
-        return render_template("quote.html")
-
-    else:
-        if not request.form.get("symbol"):
-            return apology("must provide symbol", 403)
-
-        else:
-
-            # Access the data with lookup function
-            data = lookup(request.form.get("symbol"))
-
-            if data == None:
-                return apology("symbol not found", 403)
-
-            else:
-                # Convert price to USD with usd function
-                price = usd(data["price"])
-
-                # Return to quoted.html page with pushed data
-                return render_template("quoted.html", data=data, price=price)
-
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    """Register user"""
-
-    # User reached route via POST (as by submitting a form via POST)
-    if request.method == "POST":
-
-        username = request.form.get("username")
-        password = request.form.get("password")
-        confirmation = request.form.get("confirmation")
-
-        # Ensure username was submitted
-        if not username:
-            return apology("must provide username", 403)
-
-        # Ensure password was submitted
-        elif not password:
-            return apology("must provide password", 403)
-
-        # Ensure password-confirmation was submitted
-        elif not confirmation:
-            return apology("must provide password", 403)
-
-        # Ensure passwords & password check are the same
-        elif not password == confirmation:
-            return apology("the passwords must be identical", 403)
-
-        # Ensure username is not yet in database
-        namecheck = db.execute("SELECT * FROM users WHERE username = :username",
-                          username=username)
-
-        if len(namecheck) == 1:
-            return apology(" username already exists", 403)
-
-        #hash the password
-        hash = generate_password_hash(password)
-
-        # Insert user into database
-        rows = db.execute("INSERT INTO users (username, hash) VALUES (:username, :hash)", username=username, hash=hash)
-
-        # Redirect user to home page
-        return redirect("/")
-
-    # User reached route via GET (as by clicking a link or via redirect)
-    else:
-        return render_template("register.html")
-
-
-
-@app.route("/sell", methods=["GET", "POST"])
-@login_required
-def sell():
-    """Sell shares of stock"""
-    # Query all symbols in wallet
-    rows = db.execute("SELECT symbol, SUM(shares) FROM orders WHERE user_id = :user_id GROUP BY symbol", user_id=session["user_id"])
-
-    if request.method == "GET":
-        return render_template("sell.html", rows=rows)
-
-    else:
-        req_symbol = request.form.get("symbol")
-        req_shares = int(request.form.get("shares"))
-
-        if not req_symbol:
-            return apology("must provide symbol", 403)
-
-        elif not req_shares:
-            return apology("must buy some shares", 403)
-
-        own_shares = db.execute("SELECT SUM(shares) FROM orders WHERE symbol = :symbol", symbol=req_symbol)[0]['SUM(shares)']
-
-        if req_shares > own_shares:
-            return apology("Not enough shares", 403)
-
-        # Access the data with lookup function
-        data = lookup(request.form.get("symbol"))
-
-        if data == None:
-            return apology("symbol not found", 403)
-
-        # Store data from Form request in variables
-        symbol = data["symbol"]
-        name = data["name"]
-        price = data["price"]
-        total = price * float(req_shares)
-
-        cash = float(db.execute("SELECT cash FROM users WHERE (id = :user_id)", user_id=session["user_id"])[0]['cash'])
-
-        sell = db.execute("INSERT INTO orders (user_id, name, symbol, price, shares, total, timestamp) VALUES (:user_id, :name, :symbol, :price, :shares, :total, CURRENT_TIMESTAMP)", user_id=session["user_id"], name=name, symbol=symbol, price=price, shares=req_shares*(-1), total=total)
-
-        new_cash = float(cash) + float(total)
-
-        cash_update = db.execute("UPDATE users SET cash = :new_cash WHERE id = :id", new_cash=new_cash, id=session["user_id"])
-
-        return redirect("/")
-
-
-def errorhandler(e):
-    """Handle error"""
-    if not isinstance(e, HTTPException):
-        e = InternalServerError()
-    return apology(e.name, e.code)
-
-
-# Listen for errors
-for code in default_exceptions:
-    app.errorhandler(code)(errorhandler)

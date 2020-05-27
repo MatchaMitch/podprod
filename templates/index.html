@@ -1,13 +1,10 @@
-{% extends "layout.html" %}
+{% extends 'main_template.html' %}
 
-{% block title %}
-    Index
-{% endblock %}
-
+{% block title %}PodProd Homepage{% endblock %}
+	
 {% block main %}
+	<h1>Welcome to PodProd</h1>
+	<p>PodProd is your automated Podcast PostProduction Service powered by AI</p>
 
-    <div>
-        <h1>Welcome to PodProd</h1>
-    </p>
-
+	<a href="/upload"><button type="submit" class="btn btn-primary btn-lg btn-block">Start with uploading your file</button></a>
 {% endblock %}
