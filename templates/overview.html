@@ -1,22 +1,23 @@
 {% extends 'main_template.html' %}
 
-{% block title %}PodProd Splitter{% endblock %}
+{% block title %}PodProd Podcast Overview{% endblock %}
 
 {% block main %}
 
 <div class="container">
 
-    <h1>Split the audio file</h1>
+    <h1>Here is an overview of your files</h1>
 
   	<table class="table table-striped">
   		<tr>
   			<th>Filename</th>
+  			<th>Action</th>
   		</tr>
   	{% for result in entries %}
     	{% if ".wav" in result %}
 	    	<tr>
 	    		<td>{{ result }}</td>
-	    		<td><form action="" method="POST"> <button type="submit" name="split_file" class="btn btn-primary" value={{ result }}>Split this file</button></form>
+	    		<td><form action="" method="POST"> <button type="submit" name="filename" class="btn btn-primary" value={{ result }}>Play</button></form>
 	    	</tr>
     	{% endif %}
 	{% endfor %}

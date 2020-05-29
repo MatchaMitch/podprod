@@ -84,14 +84,10 @@ def upload():
 			filepath = os.path.join(app.config["FILE_UPLOADS"], filename)
 			file.save(filepath)
 
-			# Play the sound
-			sound = AudioSegment.from_file(file, format="wav")
-			play(sound)
-
 		return render_template('upload.html', extra_line=extra_line)
 
-@app.route("/split", methods=["GET", "POST"])
-def split():
+@app.route("/overview", methods=["GET", "POST"])
+def overview():
 
 	entries = []
 		
@@ -105,17 +101,19 @@ def split():
 		
 
 	if request.method == "POST":
-		split_file = request.form['split_file']
-		print(split_file)
+		filename = request.form['filename']
 
-		return render_template('split.html', entries=entries)
+		filepath = os.path.join(app.config["FILE_UPLOADS"], filename)
+
+		# Play the sound
+		sound = AudioSegment.from_file("test1.wav")
+		play(sound)
+
+		return render_template('overview.html', entries=entries)
 
 	else:
-		return render_template('split.html', entries=entries)
+		return render_template('overview.html', entries=entries)
 	
-
 
 if __name__ == "__main__":
 	app.run()
-
-
