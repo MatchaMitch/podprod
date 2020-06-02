@@ -71,6 +71,7 @@ def upload():
 			return redirect(request.url)
 
 		if file:
+			'''
 			# Speech Recognition stuff.
 			recognizer = sr.Recognizer()
 			audio_file = sr.AudioFile(file)
@@ -78,6 +79,7 @@ def upload():
 				audio_data = recognizer.record(source)
 				text = recognizer.recognize_google(audio_data, key=GOOGLE_SPEECH_API_KEY, language="de-DE")
 			extra_line = f'Your text: "{text}"'
+'''
 
 			# Saving the file.
 			filename = secure_filename(file.filename)
@@ -101,12 +103,12 @@ def overview():
 		
 
 	if request.method == "POST":
-		filename = request.form['filename']
 
+		filename = request.form['filename']
 		filepath = os.path.join(app.config["FILE_UPLOADS"], filename)
 
 		# Play the sound
-		sound = AudioSegment.from_file("test1.wav")
+		sound = AudioSegment.from_file(filepath)
 		play(sound)
 
 		return render_template('overview.html', entries=entries)
