@@ -6,11 +6,17 @@ import simpleaudio as sa
 from pydub import AudioSegment
 from pydub.playback import play
 from pydub.silence import split_on_silence
+import matplotlib.pyplot as plt
+import numpy as np
+import wave
+import sys
+
 
 
 app = Flask(__name__)
 
 app.config["FILE_UPLOADS"] = "/Users/Micha/documents/github/podprod/uploads"
+app.config["IMG_UPLOADS"] = "/Users/Micha/documents/github/podprod/static/img"
 app.config["ALLOWED_EXTENSIONS"] = ["WAV"]
 app.config["MAX_FILESIZE"] = 86400000
 
@@ -22,7 +28,7 @@ def allowed_file(filename):
 		return False
 
 	# Check if File has allowed extension
-	ext = filename.rsplit(".", 1)[1]
+	ext = filename.rsplit(".", 1)[1] 
 
 	if ext.upper() in app.config["ALLOWED_EXTENSIONS"]:
 		return True
@@ -38,7 +44,7 @@ def allowed_filesize(filesize):
 		return False
 
 # Google Speech API Key
-GOOGLE_SPEECH_API_KEY = None
+GOOGLE_SPEECH_API_KEY = 'AIzaSyBHdC5i7900bkYedGlPHIjhxP1d9zmk5vo'
 
 # Flask route to homepage
 @app.route("/")
@@ -71,20 +77,42 @@ def upload():
 			return redirect(request.url)
 
 		if file:
-			'''
-			# Speech Recognition stuff.
-			recognizer = sr.Recognizer()
-			audio_file = sr.AudioFile(file)
-			with audio_file as source:
-				audio_data = recognizer.record(source)
-				text = recognizer.recognize_google(audio_data, key=GOOGLE_SPEECH_API_KEY, language="de-DE")
-			extra_line = f'Your text: "{text}"'
-'''
 
 			# Saving the file.
 			filename = secure_filename(file.filename)
 			filepath = os.path.join(app.config["FILE_UPLOADS"], filename)
 			file.save(filepath)
+			filename_clean = filename [:-4]
+
+			# Speech Recognition stuff.
+			recognizer = sr.Recognizer()
+			audio_file = sr.AudioFile(filepath)
+			with audio_file as source:
+				audio_data = recognizer.record(source)
+				text = recognizer.recognize_google(audio_data, key=GOOGLE_SPEECH_API_KEY, language="de-DE")
+			extra_line = f'Your text: "{text}"'
+			
+			'''
+			# Create Soundwave PNG
+			spf = wave.open(filepath, "r")
+
+			# Extract Raw Audio from Wav File
+			signal = spf.readframes(-1)
+			signal = np.fromstring(signal, "Int16")
+			fs = spf.getframerate()
+
+			# If Stereo
+			if spf.getnchannels() == 2:
+				print("Just mono files")
+				sys.exit(0)
+
+			Time = np.linspace(0, len(signal) / fs, num=len(signal))
+
+			plt.title("Signal Wave...")
+			plt.plot(Time, signal)
+			img_path = os.path.join(app.config["IMG_UPLOADS"], filename_clean)
+			plt.savefig(img_path)
+			'''
 
 		return render_template('upload.html', extra_line=extra_line)
 
@@ -104,12 +132,13 @@ def overview():
 
 	if request.method == "POST":
 
-		filename = request.form['filename']
-		filepath = os.path.join(app.config["FILE_UPLOADS"], filename)
+		if request.form['play_file'] is False:
+			filename = request.form['play_file']
+			filepath = os.path.join(app.config["FILE_UPLOADS"], filename)
 
-		# Play the sound
-		sound = AudioSegment.from_file(filepath)
-		play(sound)
+			# Play the sound
+			sound = AudioSegment.from_file(filepath)
+			play(sound)
 
 		return render_template('overview.html', entries=entries)
 
@@ -118,4 +147,4 @@ def overview():
 	
 
 if __name__ == "__main__":
-	app.run()
+	app.run(debug=True)
