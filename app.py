@@ -44,7 +44,7 @@ def allowed_filesize(filesize):
 		return False
 
 # Google Speech API Key
-GOOGLE_SPEECH_API_KEY = 'AIzaSyBHdC5i7900bkYedGlPHIjhxP1d9zmk5vo'
+GOOGLE_SPEECH_API_KEY = None
 
 # Flask route to homepage
 @app.route("/")
