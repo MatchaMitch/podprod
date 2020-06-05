@@ -6,18 +6,18 @@ import simpleaudio as sa
 from pydub import AudioSegment
 from pydub.playback import play
 from pydub.silence import split_on_silence
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import wave
 import sys
 
-
-
 app = Flask(__name__)
 
 app.config["FILE_UPLOADS"] = "/Users/Micha/documents/github/podprod/uploads"
 app.config["IMG_UPLOADS"] = "/Users/Micha/documents/github/podprod/static/img"
-app.config["ALLOWED_EXTENSIONS"] = ["WAV"]
+app.config["ALLOWED_EXTENSIONS"] = ["WAV", "M4A"]
 app.config["MAX_FILESIZE"] = 86400000
 
 # Function check for right file extension
@@ -53,7 +53,6 @@ def index():
 
 @app.route("/upload", methods=["GET", "POST"])
 def upload():
-	extra_line = ''
 
 	if request.method == "GET":
 		return render_template('upload.html')
@@ -77,6 +76,8 @@ def upload():
 			return redirect(request.url)
 
 		if file:
+			filename = secure_filename(file.filename)
+			filepath = os.path.join(app.config["FILE_UPLOADS"], filename)
 
 			# Saving the file.
 			filename = secure_filename(file.filename)
@@ -84,15 +85,19 @@ def upload():
 			file.save(filepath)
 			filename_clean = filename [:-4]
 
-			# Speech Recognition stuff.
-			recognizer = sr.Recognizer()
-			audio_file = sr.AudioFile(filepath)
-			with audio_file as source:
-				audio_data = recognizer.record(source)
-				text = recognizer.recognize_google(audio_data, key=GOOGLE_SPEECH_API_KEY, language="de-DE")
-			extra_line = f'Your text: "{text}"'
+			# Converting the file to wav, if it's not the case
+			filename_wav = "uploads/" + filename_clean + ".wav"
+			ext = filename.rsplit(".", 1)[1]
+			if not ext.upper() == "WAV":
+				song = AudioSegment.from_file(filepath)
+				song.export(filename_wav, format="wav")
+
+			# Delete the non Wav File
+			os.remove(filepath)
+
+			# Giving the filepath the wav filepath
+			filepath = filename_wav
 			
-			'''
 			# Create Soundwave PNG
 			spf = wave.open(filepath, "r")
 
@@ -107,17 +112,96 @@ def upload():
 				sys.exit(0)
 
 			Time = np.linspace(0, len(signal) / fs, num=len(signal))
-
-			plt.title("Signal Wave...")
+			plt.figure(figsize=(6,2.5))
+			plt.style.use('seaborn')
 			plt.plot(Time, signal)
 			img_path = os.path.join(app.config["IMG_UPLOADS"], filename_clean)
 			plt.savefig(img_path)
-			'''
 
-		return render_template('upload.html', extra_line=extra_line)
+		return render_template('upload.html')
 
-@app.route("/overview", methods=["GET", "POST"])
-def overview():
+@app.route("/remove-silence", methods=["GET", "POST"])
+def remove_silence():
+	entries = []
+		
+	# Open a file
+	path = app.config["FILE_UPLOADS"]
+	
+	with os.scandir(path) as dirs:
+		for entry in dirs:
+			entries.append(entry.name)
+		
+
+	if request.method == "POST":
+
+		filename = request.form['filename']
+		filepath = "uploads/" + filename
+
+		sound = AudioSegment.from_file(filepath)
+		chunks = split_on_silence(sound, 
+		    # must be silent for at least half a second
+		    min_silence_len=500,
+
+		    # consider it silent if quieter than -50 dBFS
+		    silence_thresh=-50
+
+		)
+
+		arr = []
+
+		for i, chunk in enumerate(chunks):
+		    chunk.export("uploads/temp/chunk{0}.wav".format(i), format="wav")
+		    arr.append(i)
+
+		print(len(arr))
+
+		temp = AudioSegment.from_file("uploads/temp/chunk0.wav")
+
+		for j in arr:
+		    if j == 0:
+		        print("Combining Chunks")
+		    else: 
+		        sound = AudioSegment.from_file("uploads/temp/chunk{}.wav".format(j))
+		        temp = temp + sound
+
+		temp.export(filepath, format="wav")
+
+		for j in arr:
+		    os.remove("uploads/temp/chunk{}.wav".format(j))
+
+		print("chunks deleted")	
+
+		# Create Soundwave PNG
+		spf = wave.open(filepath, "r")
+
+		# Extract Raw Audio from Wav File
+		signal = spf.readframes(-1)
+		signal = np.fromstring(signal, "Int16")
+		fs = spf.getframerate()
+
+		# If Stereo
+		if spf.getnchannels() == 2:
+			print("Just mono files")
+			sys.exit(0)
+
+		Time = np.linspace(0, len(signal) / fs, num=len(signal))
+		plt.style.use('seaborn')
+		plt.figure(figsize=(6,2.5))
+		plt.plot(Time, signal)
+		filename_clean = filename [:-4] + "_new"
+		img_path = os.path.join(app.config["IMG_UPLOADS"], filename_clean)
+		plt.savefig(img_path)	
+
+		return render_template('remove-silence.html', entries=entries)
+
+	else:
+		return render_template('remove-silence.html', entries=entries)
+
+
+@app.route("/transcribe", methods=["GET", "POST"])
+def transcribe():
+
+	text = ''
 
 	entries = []
 		
@@ -127,23 +211,23 @@ def overview():
 	with os.scandir(path) as dirs:
 		for entry in dirs:
 			entries.append(entry.name)
-
 		
-
 	if request.method == "POST":
 
-		if request.form['play_file'] is False:
-			filename = request.form['play_file']
-			filepath = os.path.join(app.config["FILE_UPLOADS"], filename)
+		filename = request.form['play_file']
+		filepath = os.path.join(app.config["FILE_UPLOADS"], filename)
 
-			# Play the sound
-			sound = AudioSegment.from_file(filepath)
-			play(sound)
+		# Speech Recognition stuff.
+		recognizer = sr.Recognizer()
+		audio_file = sr.AudioFile(filepath)
+		with audio_file as source:
+			audio_data = recognizer.record(source)
+			text = recognizer.recognize_google(audio_data, key=GOOGLE_SPEECH_API_KEY, language="de-DE")
 
-		return render_template('overview.html', entries=entries)
+		return render_template('transcribe.html', entries=entries, text=text)
 
 	else:
-		return render_template('overview.html', entries=entries)
+		return render_template('transcribe.html', entries=entries, text=text)
 	
 
 if __name__ == "__main__":

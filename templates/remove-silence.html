@@ -1,0 +1,32 @@
+{% extends 'main_template.html' %}
+
+{% block title %}PodProd Podcast Remove Silence{% endblock %}
+
+{% block main %}
+
+<div class="container">
+
+    <h1>Here is an overview of your files</h1>
+
+  	<table class="table table-striped">
+  		<tr>
+  			<th>Filename</th>
+  			<th>Edit</th>
+  			<th>Before</th>
+  			<th>After</th>
+  		</tr>
+  	{% for result in entries %}
+    	{% if ".wav" in result %}
+	    	<tr>
+	    		<td>{{ result }}</td>
+	    		<td><form action="" method="POST"> <button type="submit" name="filename" class="btn btn-primary" value={{ result }}>Remove Silence</button></form></td>
+	    		<td><img class="soundwaves" src="static/img/test8.png"></td>
+	    		<td><img class="soundwaves" src="static/img/test8_new.png"></td>
+	    	</tr>
+    	{% endif %}
+	{% endfor %}
+	</table>
+
+</div>
+
+{% endblock %}

@@ -12,15 +12,14 @@
   		<tr>
   			<th>Filename</th>
   			<th>Action</th>
-        <th>Transcribe</th>
         <th>Transcription</th>
   		</tr>
   	{% for result in entries %}
     	{% if ".wav" in result %}
 	    	<tr>
 	    		<td>{{ result }}</td>
-	    		<td><form action="" method="POST"> <button type="submit" name="play_file" class="btn btn-primary" value={{ result }}>Play</button></form></td>
-
+	    		<td><form action="" method="POST"> <button type="submit" name="play_file" class="btn btn-primary" value={{ result }}>Transcribe</button></form></td>
+          <td> {{ text }}
 	    	</tr>
     	{% endif %}
 	{% endfor %}
