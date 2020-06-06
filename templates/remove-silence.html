@@ -20,8 +20,8 @@
 	    	<tr>
 	    		<td>{{ result }}</td>
 	    		<td><form action="" method="POST"> <button type="submit" name="filename" class="btn btn-primary" value={{ result }}>Remove Silence</button></form></td>
-	    		<td><img class="soundwaves" src="static/img/test8.png"></td>
-	    		<td><img class="soundwaves" src="static/img/test8_new.png"></td>
+	    		<td><img class="soundwaves" src="static/img/{{  result [:-4] + ".png"}}"></td>
+	    		<td><img class="soundwaves" src="static/img/{{  result [:-4] + "_new.png"}}"></td>
 	    	</tr>
     	{% endif %}
 	{% endfor %}
