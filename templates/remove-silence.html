@@ -19,9 +19,15 @@
     	{% if ".wav" in result %}
 	    	<tr>
 	    		<td>{{ result }}</td>
-	    		<td><form action="" method="POST"> <button type="submit" name="filename" class="btn btn-primary" value={{ result }}>Remove Silence</button></form></td>
+	    		<td>
+            {% if dict[result] == None %}
+              <form action="" method="POST"> <button type="submit" name="filename" class="btn btn-primary" value={{ result }}>Remove Silence</button></form>
+            {% else %}
+              <a href="/get-wav/{{ result }}"><button type="submit" name="filename" class="btn btn-primary" value={{ result }}>Download</button></a>
+            {% endif %}
+          </td>
 	    		<td><img class="soundwaves" src="static/img/{{  result [:-4] + ".png"}}"></td>
-	    		<td><img class="soundwaves" src="static/img/{{  result [:-4] + "_new.png"}}"></td>
+	    		<td><img class="soundwaves" src="static/img/{{  result [:-4] + '_new.png'}}"></td>
 	    	</tr>
     	{% endif %}
 	{% endfor %}

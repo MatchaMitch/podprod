@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, session, flash, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -53,7 +53,7 @@ db = SQL("sqlite:///podprod.db")
 
 app.config["FILE_UPLOADS"] = "/Users/Micha/documents/github/podprod/uploads"
 app.config["IMG_UPLOADS"] = "/Users/Micha/documents/github/podprod/static/img"
-app.config["ALLOWED_EXTENSIONS"] = ["WAV", "M4A"]
+app.config["ALLOWED_EXTENSIONS"] = ["WAV", "M4A", "MP3"]
 app.config["MAX_FILESIZE"] = 86400000
 
 # Function check for right file extension
@@ -135,7 +135,7 @@ def upload():
 			# Giving the filepath the wav filepath
 			filepath = filename_wav
 			
-			# Create Soundwave PNG
+			## Create Soundwave PNG
 			spf = wave.open(filepath, "r")
 
 			# Extract Raw Audio from Wav File
@@ -155,21 +155,33 @@ def upload():
 			img_path = os.path.join(app.config["IMG_UPLOADS"], filename_clean)
 			plt.savefig(img_path)
 
+			# Create Database entry
+			filename_clean_wav = filename_clean + ".wav"
+			user_id = session["user_id"]
+			rows = db.execute("INSERT INTO uploads (user_id, upload_name) VALUES (:user_id, :upload_name)", user_id=user_id, upload_name=filename_clean_wav)
+
 		return render_template('upload.html')
 
 @app.route("/remove-silence", methods=["GET", "POST"])
 @login_required
 def remove_silence():
 	entries = []
+	dict = {}
 		
-	# Open a file
-	path = app.config["FILE_UPLOADS"]
-	
-	with os.scandir(path) as dirs:
-		for entry in dirs:
-			entries.append(entry.name)
-		
+	# Get files from Database
+	user_id = session["user_id"]
+	rows = db.execute("SELECT upload_name FROM uploads WHERE (user_id=:user_id)", user_id=user_id)
 
+	for i in rows:
+		value = list(i.values())
+		entries.append(value[0])
+
+	cutted = db.execute("SELECT upload_name, cutted FROM uploads WHERE (user_id=:user_id)", user_id=user_id)
+	
+	for i in cutted:
+		value = list(i.values())
+		dict[value[0]] = value[1]
+	
 	if request.method == "POST":
 
 		filename = request.form['filename']
@@ -230,11 +242,12 @@ def remove_silence():
 		img_path = os.path.join(app.config["IMG_UPLOADS"], filename_clean)
 		plt.savefig(img_path)	
 
-		return render_template('remove-silence.html', entries=entries)
+		rows = db.execute("UPDATE uploads SET cutted = '1' WHERE (user_id=:user_id) AND (upload_name=:upload_name)", user_id=user_id, upload_name=filename)
+
+		return redirect('/remove-silence')
 
 	else:
-		return render_template('remove-silence.html', entries=entries)
-
+		return render_template('remove-silence.html', entries=entries, dict=dict)
 
 @app.route("/transcribe", methods=["GET", "POST"])
 @login_required
@@ -243,14 +256,29 @@ def transcribe():
 	text = ''
 
 	entries = []
-		
-	# Open a file
-	path = app.config["FILE_UPLOADS"]
+	dict = {}
+	dict2 = {}
+
+	# Get files from Database
+	user_id = session["user_id"]
+	rows = db.execute("SELECT upload_name FROM uploads WHERE (user_id=:user_id)", user_id=user_id)
+
+	for i in rows:
+		value = list(i.values())
+		entries.append(value[0])
+
+	transcribed = db.execute("SELECT upload_name, transcribed FROM uploads WHERE (user_id=:user_id)", user_id=user_id)
 	
-	with os.scandir(path) as dirs:
-		for entry in dirs:
-			entries.append(entry.name)
-		
+	for i in transcribed:
+		value = list(i.values())
+		dict[value[0]] = value[1]
+
+	transcription = db.execute("SELECT upload_name, transcription FROM uploads WHERE (user_id=:user_id)", user_id=user_id)
+	
+	for i in transcription:
+		value = list(i.values())
+		dict2[value[0]] = value[1]	
+
 	if request.method == "POST":
 
 		filename = request.form['play_file']
@@ -263,11 +291,24 @@ def transcribe():
 			audio_data = recognizer.record(source)
 			text = recognizer.recognize_google(audio_data, key=GOOGLE_SPEECH_API_KEY, language="de-DE")
 
-		return render_template('transcribe.html', entries=entries, text=text)
+		rows = db.execute("UPDATE uploads SET transcribed = '1' WHERE (user_id=:user_id) AND (upload_name=:upload_name)", user_id=user_id, upload_name=filename)
+		rows = db.execute("UPDATE uploads SET transcription = :text WHERE (user_id=:user_id) AND (upload_name=:upload_name)", user_id=user_id, upload_name=filename, text=text)
+
+		return redirect('/transcribe')
 
 	else:
-		return render_template('transcribe.html', entries=entries, text=text)
+		return render_template('transcribe.html', entries=entries, text=text, dict2=dict2)
 	
+
+@app.route("/get-wav/<wav_id>")
+def get_wav(wav_id):
+
+    filename = f"{wav_id}"
+
+    try:
+        return send_from_directory(app.config["FILE_UPLOADS"], filename=filename, as_attachment=True)
+    except FileNotFoundError:
+        abort(404)
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
