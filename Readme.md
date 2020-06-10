@@ -2,7 +2,7 @@ PodProd is an automated Podcast Post Production Software
 
 As a user you have to first register with a username and a password to see the functions of the web-app.
 
-When you are logged in you have 3 functions you can use. 
+When you are logged in you have different functions you can use. 
 
 1. Overview
 In the overview you can see all your uploaded files that are on the server. You will just be shown your files, which is an output of the database where each uploaded file is stored in. If you want, you can also delete the files, which will delete the file and all linked files (images, wave files, etc.)
