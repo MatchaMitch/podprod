@@ -1,3 +1,4 @@
+This is my final project for the CS50 2020 course. 
 PodProd is an automated Podcast Post Production Software
 
 As a user you have to first register with a username and a password to see the functions of the web-app.
