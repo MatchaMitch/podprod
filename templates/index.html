@@ -1,10 +1,20 @@
 {% extends 'main_template.html' %}
 
 {% block title %}PodProd Homepage{% endblock %}
-	
-{% block main %}
-	<h1>Welcome to PodProd</h1>
-	<p>PodProd is your automated Podcast PostProduction Service powered by AI</p>
 
-	<a href="/upload"><button type="submit" class="btn btn-primary btn-lg btn-block">Start with uploading your file</button></a>
+{% block hero %}
+
+	<div class="view intro-2">
+		<div class="text-center">
+			<h1>Welcome to PodProd</h1>
+			<h4>PodProd is your automated Podcast PostProduction Service powered by AI</h4>
+
+			<a href="/register" class="btn btn-secondary btn-lg">Edit your first podcast by signing up for free</a>
+		</div>
+    </div>
+
+{% endblock %}
+
+{% block main %}
+
 {% endblock %}
