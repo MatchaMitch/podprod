@@ -386,12 +386,17 @@ def register():
     if request.method == "POST":
 
         username = request.form.get("username")
+        email = request.form.get("email")
         password = request.form.get("password")
         confirmation = request.form.get("confirmation")
 
         # Ensure username was submitted
         if not username:
             return apology("must provide username", 403)
+
+        # Ensure Email was submitted
+        if not email:
+            return apology("must provide email", 403)
 
         # Ensure password was submitted
         elif not password:
@@ -416,7 +421,7 @@ def register():
         hash = generate_password_hash(password)
 
         # Insert user into database
-        rows = db.execute("INSERT INTO users (username, hash) VALUES (:username, :hash)", username=username, hash=hash)
+        rows = db.execute("INSERT INTO users (username, email, hash) VALUES (:username, :email, :hash)", username=username, email=email, hash=hash)
 
         # Redirect user to home page
         return redirect("/login")
