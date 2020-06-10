@@ -26,7 +26,7 @@
           <div class="collapse navbar-collapse" id="navbarNav">
             {% if session.user_id %}
               <ul class="navbar-nav mr-auto">
-                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/overview">Overview</a></li>
                 <li class="nav-item"><a class="nav-link" href="/upload">Upload</a></li>
                 <li class="nav-item"><a class="nav-link" href="/transcribe">Transcribe</a></li>
                 <li class="nav-item"><a class="nav-link" href="/remove-silence">Remove Silence</a></li>
@@ -45,16 +45,17 @@
       </nav>
 
       {% block header %}{% endblock %}
-
-
-
     
     </header>
+
     <div id="content">
       {% block hero %}{% endblock %}
       <div class="container">
         <main>{% block main %}{% endblock %}</main>
       </div>
+    </div>
+    <div class="footer">
+      <p>CS50 Final project PodProd | Designed and created by Michael Decker, 2020</p>
     </div>
       <!-- Optional JavaScript -->
       <!-- jQuery first, then Popper.js, then Bootstrap JS -->

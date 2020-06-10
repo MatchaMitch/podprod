@@ -6,7 +6,7 @@
 
 <div class="container">
 
-    <h1>Here is an overview of your files</h1>
+    <h1>Transcribe your files</h1>
 
   	<table class="table table-striped">
   		<tr>
@@ -23,7 +23,7 @@
             {% if dict2[result] == None %}
               <form action="" method="POST"> <button type="submit" name="play_file" class="btn btn-primary" value={{ result }}>Transcribe</button></form>
             {% else %}
-              <button type="submit" name="play_file" class="btn btn-primary" value={{ result }} disabled>already transcribed</button>
+              <button type="submit" name="play_file" class="btn btn-outline-secondary" value={{ result }} disabled>already transcribed</button>
             {% endif %}
           </td>
           <td> {{ dict2[result] }}</td>

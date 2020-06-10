@@ -30,12 +30,18 @@ nav {
 }
 
 html, body{
-    height: 100%;
+    min-height: 100%;
+}
+
+a:hover{
+    color: #1E0A6E;
+    text-decoration: none;
 }
 
 #content{
-	position: relative;
-	top: 60px;
+	margin-top: 75px;
+	min-height: 50px;
+	margin-bottom: 24px;
 }
 .view{
     top: 0;
@@ -55,6 +61,14 @@ html, body{
 h1{
 	font-size: 4.5rem;
 	margin-bottom: 1rem;
+}
+
+h2{
+	color: #1E0A6E;
+}
+
+h3{
+	margin-bottom: 1.5rem;
 }
 
 h4 {
@@ -83,4 +97,54 @@ h4 {
 	max-width: 480px;
 	padding: 30px;
 	margin: 0 auto;
+}
+
+.footer {
+	right: 0;
+	bottom: 0;
+	left: 0;
+	padding: 1rem;
+	text-align: center;
+	color: rgba(0,0,0,.5);
+	position: relative;
+}
+
+.footer p{
+	margin-bottom: 0rem !important;
+}
+
+.section{
+	position: relative;
+    padding-top: 25px;
+    padding-bottom: 25px;
+}
+
+.home-feature-row {
+    justify-content: center;
+    align-items: center;
+    text-align: left;
+}
+
+.home-feature-row-img{
+	max-width: 100%;
+	height: 500px;
+}
+
+.feature-block-indent {
+	padding-left: 30px;
+}
+
+.text-btn{
+	position: relative;
+    display: flex;
+    align-items: center;
+    color: #28AAFA;
+    font-size: 24px;
+    line-height: 1.6;
+    font-weight: 500;
+}
+
+.btn-arrow-icon{
+	width: 22px;
+    margin-left: 10px;
 }

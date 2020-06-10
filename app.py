@@ -87,6 +87,39 @@ GOOGLE_SPEECH_API_KEY = None
 def index():
 	return render_template("index.html")
 
+
+# Flask route User Overview Seite
+@app.route("/overview", methods=["GET", "POST"])
+@login_required
+def overview():
+
+	entries = []
+
+	# Get files from Database
+	user_id = session["user_id"]
+	rows = db.execute("SELECT upload_name FROM uploads WHERE (user_id=:user_id)", user_id=user_id)
+
+	for i in rows:
+		value = list(i.values())
+		entries.append(value[0])
+
+	if request.method == "POST":
+
+		filename = request.form['filename']
+		filepath = "uploads/" + filename
+
+		os.remove(filepath)
+		print("file deleted")
+		os.remove("static/img/" + filename [:-4] + ".png")
+		os.remove("static/img/" + filename [:-4] + "_new.png")	
+	
+		rows = db.execute("DELETE FROM uploads WHERE (user_id=:user_id) AND (upload_name=:upload_name)", user_id=user_id, upload_name=filename)
+
+		return redirect('/overview')
+
+	else:
+		return render_template('overview.html', entries=entries)
+
 @app.route("/upload", methods=["GET", "POST"])
 @login_required
 def upload():
@@ -160,7 +193,7 @@ def upload():
 			user_id = session["user_id"]
 			rows = db.execute("INSERT INTO uploads (user_id, upload_name) VALUES (:user_id, :upload_name)", user_id=user_id, upload_name=filename_clean_wav)
 
-		return render_template('upload.html')
+		return redirect('/overview')
 
 @app.route("/remove-silence", methods=["GET", "POST"])
 @login_required
@@ -298,7 +331,6 @@ def transcribe():
 
 	else:
 		return render_template('transcribe.html', entries=entries, text=text, dict2=dict2)
-	
 
 @app.route("/get-wav/<wav_id>")
 def get_wav(wav_id):
@@ -340,7 +372,7 @@ def login():
         session["user_id"] = rows[0]["id"]
 
         # Redirect user to home page
-        return redirect("/")
+        return redirect("/overview")
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
@@ -387,7 +419,7 @@ def register():
         rows = db.execute("INSERT INTO users (username, hash) VALUES (:username, :hash)", username=username, hash=hash)
 
         # Redirect user to home page
-        return redirect("/")
+        return redirect("/login")
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:

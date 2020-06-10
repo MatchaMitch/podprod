@@ -8,7 +8,6 @@
 		<div class="text-center">
 			<h1>Welcome to PodProd</h1>
 			<h4>PodProd is your automated Podcast PostProduction Service powered by AI</h4>
-
 			<a href="/register" class="btn btn-secondary btn-lg">Edit your first podcast by signing up for free</a>
 		</div>
     </div>
@@ -16,5 +15,38 @@
 {% endblock %}
 
 {% block main %}
+<h2>PodProd is your automated Post Production Service</h2>
 
-{% endblock %}
+<div class="section">
+	<div class="row home-feature-row">
+		<div class="col">
+			<img src="static/img/home-feature-silence.png" class="home-feature-row-img">
+		</div>
+
+		<div class="col">
+			<h3>Remove silences from your Podcast</h3>
+			<p>If you have time, make it shorter. This wisdom also counts for podcasts.</p>
+			<p>PodProd removes the silences caused by pauses in speech or errors within the recording of your podcast.</p>
+			<p>We are using the latest AI technology to make it sound perfectly natural</p>
+			<a href="/register" class="text-btn">Start now<img src="static/img/arrow.svg" alt="" class="btn-arrow-icon"></a>
+		</div>
+	</div>
+</div>
+
+<div class="section">
+	<div class="row home-feature-row">
+		<div class="col">
+			<h3>Automatically transcribe your Podcast</h3>
+			<p>Do you want to use your podcast content for your blog?</p>
+			<p>Don't spend the hours by manually listening and transcribing it yourself or pay a service big $$$ for it.</p>
+			<p>We are using the latest AI technology to transcribe your podcast automatically. And as our software is always learning, it will get better every day.</p>
+			<a href="/register" class="text-btn">Start now<img src="static/img/arrow.svg" alt="" class="btn-arrow-icon"></a>
+		</div>
+
+		<div class="col">
+			<img src="static/img/home-feature-transcription.png" class="home-feature-row-img">
+		</div>
+	</div>
+</div>
+
+{% endblock %}	
